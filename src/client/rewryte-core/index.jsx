@@ -1,13 +1,13 @@
 import ReactDOM from 'react-dom';
-import SheetEditor from './components/SheetEditor';
+import Chat from './components/Chat';
 import './styles.css';
 
-const App = () => {
+function App() {
   return (
     <>
-      <SheetEditor />
+      <Chat />
     </>
   );
-};
+}
 
 ReactDOM.render(<App />, document.getElementById('index'));
