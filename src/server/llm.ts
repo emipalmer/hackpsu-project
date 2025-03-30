@@ -1,10 +1,13 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { getDocumentContent } from './document-context';
 
 // Replace with your actual API key
 const API_KEY = process.env.GOOGLE_API_KEY;
 console.log('[API_KEY] google: ', API_KEY);
 
 async function generateText(prompt: string): Promise<string | null> {
+  const text = getDocumentContent();
+  console.log(text);
   if (!API_KEY) {
     console.error(
       'API_KEY is not set. Please set the GOOGLE_API_KEY environment variable.'
@@ -13,7 +16,7 @@ async function generateText(prompt: string): Promise<string | null> {
   }
 
   const genAI = new GoogleGenerativeAI(API_KEY);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }); // Specify the flash model
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' }); // Specify the flash model
 
   try {
     const result = await model.generateContent(prompt);

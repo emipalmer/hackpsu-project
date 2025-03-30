@@ -21,6 +21,7 @@ const Chat = () => {
     async function fetchContent() {
       try {
         setLoading(true);
+        setTimeout(() => {}, 1000);
         const text = await serverFunctions.getDocumentContent();
         console.log(
           '[Chat] Document content passed from the server: ',
@@ -37,8 +38,12 @@ const Chat = () => {
   }, []);
 
   return (
-    <div className="h-screen flex flex-col">
-      {loading && <div>this is the loading state</div>}
+    <div className="h-screen flex flex-col relative">
+      {loading && (
+        <div className="z-100 font-light animate-pulse flex items-center justify-center absolute top-0 right-0 size-full bg-gradient-to-t from-transparent to-white/25 backdrop-blur-md">
+          Loading...
+        </div>
+      )}
       <div className="flex-1 p-4">
         {messages.map((message, index) => (
           <div
