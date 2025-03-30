@@ -15,7 +15,7 @@ const Chat = () => {
   };
 
   return (
-    <div className="h-full relative">
+    <div className="h-screen flex flex-col">
       <div className="flex-1 p-4">
         {messages.map((message, index) => (
           <div
@@ -34,10 +34,7 @@ const Chat = () => {
           </div>
         ))}
       </div>
-      <form
-        onSubmit={handleSubmit}
-        className=" bottom-4 p-4 border-t flex gap-2"
-      >
+      <form onSubmit={handleSubmit} className="p-4 border-t flex gap-2">
         <input
           type="text"
           value={input}

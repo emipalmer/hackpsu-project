@@ -7,6 +7,7 @@ export const onOpen = () => {
 };
 
 export const openChatSidebar = () => {
-  const html = HtmlService.createHtmlOutputFromFile('rewryte-core');
+  const html =
+    HtmlService.createHtmlOutputFromFile('rewryte-core').setTitle('Rewryte');
   DocumentApp.getUi().showSidebar(html);
 };
