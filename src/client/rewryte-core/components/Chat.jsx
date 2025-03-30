@@ -1,52 +1,128 @@
 import { useEffect, useState } from 'react';
 import { serverFunctions } from '../../utils/serverFunctions';
 
+const MAX_CHATS = 10;
+const STORAGE_KEY = 'rewryte_chats';
+
 const Chat = () => {
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content:
-        "Hello! I'm your AI writing assistant. How can I help you with your document today?",
-    },
-  ]);
+  const [activeChat, setActiveChat] = useState(null);
+  const [chats, setChats] = useState([]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loadingExtension, setLoadingExtension] = useState(false);
+  const [isResponding, setIsResponding] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-
-    serverFunctions.queryGemini(`${input}`);
-    setMessages([...messages, { role: 'user', content: input }]);
-    setInput('');
+  const saveChatsToStorage = (updatedChats) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedChats));
   };
 
-  // useEffect(() => {
-  //   async function fetchContent() {
-  //     try {
-  //       setLoading(true);
-  //       // setTimeout(() => {}, 1000);
-  //       const text = await serverFunctions.getDocumentContent();
-  //       console.log(
-  //         '[Chat] Document content passed from the server: ',
-  //         content
-  //       );
-  //       setLoading(false);
-  //       setContent(text);
-  //     } catch (error) {
-  //       console.error('[Chat]', error);
-  //       setLoading(false);
-  //     }
-  //   }
-  //   fetchContent();
-  // }, []);
+  const handleNewChat = () => {
+    const newChat = {
+      id: Date.now(),
+      messages: [
+        {
+          role: 'assistant',
+          content:
+            "Hello! I'm your AI writing assistant. How can I help you with your document today?",
+        },
+      ],
+    };
+
+    const updatedChats = [...chats, newChat];
+    if (updatedChats.length > MAX_CHATS) {
+      updatedChats.shift(); // Remove the oldest chat
+    }
+
+    setChats(updatedChats);
+    setActiveChat(newChat.id);
+    setMessages(newChat.messages);
+    saveChatsToStorage(updatedChats);
+  };
+
+  const switchChat = (chatId) => {
+    const chat = chats.find((c) => c.id === chatId);
+    if (chat) {
+      setActiveChat(chatId);
+      setMessages(chat.messages);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || isResponding) return;
+
+    const userMessage = { role: 'user', content: input };
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+    setInput('');
+    setIsResponding(true);
+
+    try {
+      const response = await serverFunctions.queryGemini(input);
+      const assistantMessage = { role: 'assistant', content: response };
+      const finalMessages = [...updatedMessages, assistantMessage];
+      setMessages(finalMessages);
+
+      // Update the chat in storage
+      const updatedChats = chats.map((chat) =>
+        chat.id === activeChat ? { ...chat, messages: finalMessages } : chat
+      );
+      setChats(updatedChats);
+      saveChatsToStorage(updatedChats);
+    } catch (error) {
+      console.error('Error getting response:', error);
+      const errorMessage = {
+        role: 'assistant',
+        content: 'Sorry, I encountered an error processing your request.',
+      };
+      setMessages([...updatedMessages, errorMessage]);
+    } finally {
+      setIsResponding(false);
+    }
+  };
+
+  useEffect(() => {
+    setLoadingExtension(true);
+    // Load chats from localStorage
+    const storedChats = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    setChats(storedChats);
+
+    // If there are stored chats, set the active chat to the most recent one
+    if (storedChats.length > 0) {
+      setActiveChat(storedChats[storedChats.length - 1].id);
+      setMessages(storedChats[storedChats.length - 1].messages);
+    } else {
+      // Create a new chat if none exist
+      handleNewChat();
+    }
+    setLoadingExtension(false);
+  }, []);
 
   return (
     <div className="h-screen flex flex-col relative bg-white">
-      <div className="border-b bg-white px-6 py-3 flex items-center">
+      <div className="border-b bg-white px-6 py-3 flex items-center justify-between">
         <h1 className="text-[#3c4043] text-xl font-normal">
           Document Assistant
         </h1>
+        <div className="flex items-center gap-4">
+          <select
+            className="px-3 py-1 border border-[#dadce0] text-[#3c4043]"
+            value={activeChat || ''}
+            onChange={(e) => switchChat(Number(e.target.value))}
+          >
+            {chats.map((chat, index) => (
+              <option key={chat.id} value={chat.id}>
+                Chat {chats.length - index}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleNewChat}
+            className="px-4 py-1 bg-[#1a73e8] text-white hover:bg-[#1557b0] rounded"
+          >
+            New Chat
+          </button>
+        </div>
       </div>
 
       {loadingExtension && (
@@ -57,36 +133,6 @@ const Chat = () => {
           </div>
         </div>
       )}
-
-      <div className="flex-1 p-6 overflow-y-auto bg-[#f8f9fa]">
-        <div className="max-w-3xl mx-auto">
-          {content && (
-            <div className="mb-6 p-4 bg-white border border-[#dadce0] text-sm text-[#3c4043]">
-              <div className="font-medium mb-2">Current Document Content:</div>
-              <div className="max-h-32 overflow-y-auto">{content}</div>
-            </div>
-          )}
-
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`mb-4 flex ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              <div
-                className={`max-w-[80%] p-3 shadow-sm ${
-                  message.role === 'user'
-                    ? 'bg-[#1a73e8] text-white'
-                    : 'bg-white border border-[#dadce0] text-[#3c4043]'
-                }`}
-              >
-                {message.content}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       <div className="border-t bg-white p-4">
         <div className="max-w-3xl mx-auto">
@@ -101,7 +147,7 @@ const Chat = () => {
             <button
               type="submit"
               className="px-6 py-2 bg-[#1a73e8] text-white hover:bg-[#1557b0] disabled:bg-[#dadce0] disabled:cursor-not-allowed"
-              disabled={!input.trim()}
+              disabled={!input.trim() || isResponding}
             >
               <span className="text-xl">→</span>
             </button>
