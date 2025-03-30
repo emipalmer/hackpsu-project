@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { serverFunctions } from '../../utils/serverFunctions';
 
 const Chat = () => {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hello! How can I help you today?' },
   ]);
   const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [content, setContent] = useState(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -14,8 +17,28 @@ const Chat = () => {
     setInput('');
   };
 
+  useEffect(() => {
+    async function fetchContent() {
+      try {
+        setLoading(true);
+        const text = await serverFunctions.getDocumentContent();
+        console.log(
+          '[Chat] Document content passed from the server: ',
+          content
+        );
+        setLoading(false);
+        setContent(text);
+      } catch (error) {
+        console.error('[Chat] Error: ', error);
+        setLoading(false);
+      }
+    }
+    fetchContent();
+  }, []);
+
   return (
     <div className="h-screen flex flex-col">
+      {loading && <div>this is the loading state</div>}
       <div className="flex-1 p-4">
         {messages.map((message, index) => (
           <div
@@ -24,6 +47,7 @@ const Chat = () => {
               message.role === 'user' ? 'text-right' : 'text-left'
             }`}
           >
+            <div className="h-10 overflow-scroll">{content}</div>
             <div
               className={`inline-block p-2 ${
                 message.role === 'user' ? 'bg-gray-200' : 'bg-gray-100'
