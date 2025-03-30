@@ -1,7 +1,7 @@
 const About = () => (
   <div>
     <p>
-      <b>☀️ React app inside a sidebar! ☀️</b>
+      <b className="bg-yellow-500">that is awesome</b>
     </p>
     <p>
       This is a very simple page demonstrating how to build a React app inside a

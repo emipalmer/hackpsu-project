@@ -1,6 +1,16 @@
-import { createRoot } from 'react-dom/client';
+import ReactDOM from 'react-dom';
 import About from './components/About';
+import './styles.css';
 
-const container = document.getElementById('index');
-const root = createRoot(container);
-root.render(<About />);
+function App() {
+  return (
+    <>
+      <About />
+    </>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById('index'));
+// const container = ;
+// const root = createRoot(container);
+// root.render(<About />);
